@@ -34,6 +34,12 @@
 <script>
 export default {
     name: 'LetterPhoto',
+    props: {
+        skip: {
+            type: Boolean,
+            default: false,
+        },
+    },
     data() {
         return {
             typedText1: '',
@@ -47,7 +53,16 @@ export default {
         }
     },
     mounted() {
-        this.runTypingSequence();
+        if (this.skip) {
+            this.isTyping = false;
+            this.showFirst = true;
+            this.showSecond = true;
+            this.showPhoto = true;
+            this.typedText1 = this.fullText1;
+            this.typedText2 = this.fullText2;
+        } else {
+            this.runTypingSequence();
+        }
     },
     methods: {
         runTypingSequence() {

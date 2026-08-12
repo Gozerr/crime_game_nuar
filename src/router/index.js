@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../views/HomePage.vue'
 import StartMessagePage from '../views/StartMessagePage.vue'
 import AboutPage from '../views/AboutPage.vue'
+import AnyaPage from '../views/AnyaPage.vue'
 
 const routes = [
   {
@@ -19,7 +20,13 @@ const routes = [
     path: '/about',
     name: 'about',
     component: AboutPage
+  },
+  {
+    path: '/anya',
+    name: 'anya',
+    component: AnyaPage
   }
+
 ]
 
 const router = createRouter({

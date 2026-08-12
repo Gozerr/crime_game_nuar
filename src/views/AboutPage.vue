@@ -3,10 +3,11 @@
 
 
 
-    <h1>Вячеслава ?</h1>
+    <h1 class='vyacheslav-title'>Вячеслава ?</h1>
     <div class="story-text">
       <AboutTypingText
         :text="aboutText.main"
+        :skip="skipAnimations"
         @finished="onMainFinished"
       />
     </div>
@@ -23,6 +24,7 @@
           <div v-if="extraTextVisible" class="story-text1">
             <AboutTypingText
               :text="extraText"
+              :skip="skipAnimations"
               @finished="phoneProfileVisible = true"
             />
           </div>
@@ -40,6 +42,7 @@
           <div v-if="phoneProfileVisible" class="story-text2">
             <AboutTypingText
               :text="dopnikText"
+              :skip="skipAnimations"
               @finished="onDopnikFinished"
             />
           </div>
@@ -55,10 +58,18 @@
       <div v-if="imageOpen" class="image-modal" @click.self="closeImage">
         <button class="image-modal__close" @click="closeImage">×</button>
         <img src="/компания людей.png" alt="Наша компашка" class="image-modal__img" />
+        <ChoiceModel
+          v-if="showGirlChoice"
+          title="Я вглядываюсь в размытое лицо на фотографии... и понимаю "
+          :options="girlChoiceOptions"
+          @select="handleChoice"
+        />
       </div>
     </div>
 
     <button @click="goToHome" class="goToHome">Вернуться на главную</button>
+
+    
 
   </div>
 </template>
@@ -68,12 +79,16 @@ import AboutTypingText from '../components/AboutTypingText.vue'
 import PhoneMessage from '../components/PhoneMessage.vue'
 import ProfileCard from '../components/ProfileCard.vue'
 import { aboutText } from '../data/aboutText'
+import { loadProgress, updateProgress } from '../data/progress.js'
+import ChoiceModel from '../components/ChoiceModel.vue'
+import AnyaPage from '../views/AnyaPage.vue'
 
 export default {
   components: {
     AboutTypingText,
     PhoneMessage,
     ProfileCard,
+    ChoiceModel,
   },
   data() {
     return {
@@ -90,10 +105,29 @@ export default {
       dopnikText: aboutText.dopnik,
       imageVisible: false,
       imageOpen: false,
+      skipAnimations: false,
+      showGirlChoice: false,
+      girlChoiceOptions: [
+        { id: 'anya',   label: 'Это Аня',              description: 'Подруга, с которой мы перестали общаться' },
+        { id: 'stranger', label: 'Я её не знаю',          description: 'Но лицо кажется смутно знакомым' },
+        { id: 'self',     label: 'Это... я?',             description: 'Куртка, стрижка — но я не помню этого кадра' },
+      ],
     }
   },
-  mounted() {
-    this.startMainTyping()
+  created() {
+    // created() срабатывает до монтирования дочерних AboutTypingText,
+    // поэтому skipAnimations успевает стать true ДО того, как компонент
+    // текста прочитает свой проп skip в собственном mounted().
+    const progress = loadProgress()
+    if (progress.seenAbout) {
+      this.skipAnimations = true
+      this.phoneVisible = true
+      this.extraTextVisible = true
+      this.phoneProfileVisible = true
+      this.imageVisible = true
+    } else {
+      this.startMainTyping()
+    }
   },
   beforeUnmount() {
     if (this.timeInterval) {
@@ -115,12 +149,42 @@ export default {
     },
     openImage() {
       this.imageOpen = true
+
+      this.showGirlChoice = false
+
+      setTimeout(() => {
+        this.showGirlChoice = true
+      }, 2500)
     },
     closeImage() {
       this.imageOpen = false
+      this.showGirlChoice = false
     },
     onDopnikFinished() {
+      const progress = loadProgress()
+      if (progress.girlIdentity) {
+        this.girlIdentity = progress.girlIdentity
+        
+      } 
       this.imageVisible = true
+      
+      updateProgress({ seenAbout: true })
+    },
+    onGirlChoiceSelected(id) {
+      this.showGirlChoice = false
+      updateProgress({ girlIdentity: id })
+      // дальше — показ текста нужной ветки, например:
+      this.girlIdentity = id
+      this.imageVisible = true
+    },
+    handleChoice(id) {
+      if (id === 'anya')
+      this.$router.push('/anya')
+      else if (id === 'stranger') {
+        this.$router.push('/start-message')
+      } else if (id === 'self') {
+        this.$router.push('/start-message')
+      }
     },
   },
 }
@@ -232,6 +296,12 @@ export default {
   max-width: 42rem;
   width: min(100%, 42rem);
   text-align: left;
+}
+
+.vyacheslav-title {
+  margin: 1.5rem 0 0;
+  color: #f5ecec;
+  font-size: 2.5rem;
 }
 
 .about-grid {

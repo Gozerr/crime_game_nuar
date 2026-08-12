@@ -32,6 +32,21 @@ export default {
     goToStartMessage() {
       this.$router.push('/start-message');
     }
+  },
+
+  mounted() {
+  const animationFinished = localStorage.getItem('detectiveStoryAnimationFinished');
+
+  if (animationFinished === 'true') {
+    this.typedText = this.fullText;
+    this.textVisible = true;
+    this.actionsVisible = true;
+    this.typing = false;
+  } else {
+    this.textVisible = true;
+    this.typing = true;
+    this.actionsVisible = false;
+    this.typeText();
   }
 }
 </script>

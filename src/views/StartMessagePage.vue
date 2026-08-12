@@ -8,14 +8,14 @@
           {{ typedText }}<span class="typing-cursor" v-if="typing">|</span>
         </p>
         <div class="actions" :class="{ 'is-visible': actionsVisible }">
-          <button class="answer-btn" @click="openModal">Ввести ответ</button>
+          <button class="answer-btn" @click="openModal">{{ solved ? 'Продолжить расследование' : 'Ввести ответ' }}</button>
           <button class="back-btn" @click="goHome">Вернуться назад</button>
         </div>
       </div>
 
       <div class="phone-column">
         <div class="phone-frame">
-          <LetterPhoto />
+          <LetterPhoto :skip="skipPhoneAnimation" />
         </div>
       </div>
     </div>
@@ -35,6 +35,7 @@
 
 <script>
 import LetterPhoto from '../components/LetterPhoto.vue';
+import { loadProgress, updateProgress } from '../data/progress.js';
 
 export default {
   components: { LetterPhoto },
@@ -48,13 +49,20 @@ export default {
       actionsVisible: false,
       isModalOpen: false,
       answer: '',
-      error: ''
+      error: '',
+      solved: false,
+      skipPhoneAnimation: false
     }
   },
-  mounted() {
-    const animationFinished = localStorage.getItem('detectiveStoryAnimationFinished');
+  created() {
+    // created() срабатывает до монтирования дочерних компонентов (LetterPhoto),
+    // поэтому skipPhoneAnimation успевает стать нужным значением ДО того,
+    // как LetterPhoto прочитает свой проп skip в собственном mounted().
+    const progress = loadProgress();
+    this.solved = progress.solvedFirstPuzzle;
+    this.skipPhoneAnimation = progress.seenIntro;
 
-    if (animationFinished === 'true') {
+    if (progress.seenIntro) {
       this.typedText = this.fullText;
       this.textVisible = true;
       this.actionsVisible = true;
@@ -63,6 +71,12 @@ export default {
       this.textVisible = true;
       this.typing = true;
       this.actionsVisible = false;
+    }
+  },
+  mounted() {
+    // setInterval трогает DOM опосредованно через реактивность, безопасно
+    // запускать его и в mounted() — важно было только раньше выставить skip.
+    if (this.typing) {
       this.typeText();
     }
   },
@@ -85,11 +99,15 @@ export default {
           setTimeout(() => {
             this.actionsVisible = true;
           }, 250);
-          localStorage.setItem('detectiveStoryAnimationFinished', 'true');
+          updateProgress({ seenIntro: true });
         }
       }, 45);
     },
     openModal() {
+      if (this.solved) {
+        this.$router.push('/about');
+        return;
+      }
       this.isModalOpen = true;
       this.error = '';
     },
@@ -102,9 +120,13 @@ export default {
       const correctAnswer = 'vyacheslava';
       if (this.answer.trim().toLowerCase() === correctAnswer) {
         this.closeModal();
+        this.solved = true;
         const endTime = Date.now() + 10 * 60 * 60 * 1000;
-        localStorage.setItem('detectiveTimerEnd', endTime.toString());
-        localStorage.setItem('detectiveTimerActive', 'true');
+        updateProgress({
+          solvedFirstPuzzle: true,
+          timerEnd: endTime,
+          timerActive: true,
+        });
         this.$router.push('/about');
       } else {
         this.error = 'Неверный ответ. Попробуйте снова.';

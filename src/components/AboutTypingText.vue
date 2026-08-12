@@ -18,6 +18,10 @@ export default {
       type: Number,
       default: 40,
     },
+    skip: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -28,7 +32,13 @@ export default {
   },
   emits: ['finished'],
   mounted() {
-    this.startTyping()
+    if (this.skip) {
+      this.typedText = this.text
+      this.typing = false
+      this.$emit('finished')
+    } else {
+      this.startTyping()
+    }
   },
   beforeUnmount() {
     if (this.intervalId) {
